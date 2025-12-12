@@ -74,10 +74,10 @@ export const MOCK_USERS: UserProfile[] = [
     accountNumber: '100023456789',
     stats: { earnings: '12,450 ETB', photosSold: 42, views: 1205 },
     photos: [
-      { id: 1, url: 'https://picsum.photos/id/1011/300/300', price: '800 ETB', status: 'Sold', date: '2 hours ago', title: 'Lake Tana Sunset' },
-      { id: 2, url: 'https://picsum.photos/id/1027/300/300', price: '1,200 ETB', status: 'Active', date: '1 day ago', title: 'Traditional Portrait' },
-      { id: 3, url: 'https://picsum.photos/id/1012/300/300', price: '950 ETB', status: 'Active', date: '3 days ago', title: 'Addis Street Life' },
-      { id: 4, url: 'https://picsum.photos/id/1013/300/300', price: '1,500 ETB', status: 'Sold', date: '1 week ago', title: 'Coffee Ceremony' },
+      { id: 1, url: 'https://picsum.photos/id/1011/300/300', price: '450 ETB', status: 'Sold', date: '2 hours ago', title: 'Lake Tana Sunset' },
+      { id: 2, url: 'https://picsum.photos/id/1027/300/300', price: '500 ETB', status: 'Active', date: '1 day ago', title: 'Traditional Portrait' },
+      { id: 3, url: 'https://picsum.photos/id/1012/300/300', price: '350 ETB', status: 'Active', date: '3 days ago', title: 'Addis Street Life' },
+      { id: 4, url: 'https://picsum.photos/id/1013/300/300', price: '500 ETB', status: 'Sold', date: '1 week ago', title: 'Coffee Ceremony' },
     ]
   },
   {
@@ -89,8 +89,8 @@ export const MOCK_USERS: UserProfile[] = [
     accountNumber: '00345678901',
     stats: { earnings: '45,200 ETB', photosSold: 156, views: 5400 },
     photos: [
-      { id: 101, url: 'https://picsum.photos/id/1015/300/300', price: '2,000 ETB', status: 'Sold', date: '1 day ago', title: 'Mountain Landscape' },
-      { id: 102, url: 'https://picsum.photos/id/1016/300/300', price: '1,800 ETB', status: 'Active', date: '2 days ago', title: 'River Valley' },
+      { id: 101, url: 'https://picsum.photos/id/1015/300/300', price: '500 ETB', status: 'Sold', date: '1 day ago', title: 'Mountain Landscape' },
+      { id: 102, url: 'https://picsum.photos/id/1016/300/300', price: '480 ETB', status: 'Active', date: '2 days ago', title: 'River Valley' },
     ]
   },
   {
@@ -102,7 +102,7 @@ export const MOCK_USERS: UserProfile[] = [
     accountNumber: '933445566',
     stats: { earnings: '8,900 ETB', photosSold: 23, views: 890 },
     photos: [
-      { id: 201, url: 'https://picsum.photos/id/1025/300/300', price: '1,200 ETB', status: 'Active', date: '5 hours ago', title: 'Fashion Shoot' },
+      { id: 201, url: 'https://picsum.photos/id/1025/300/300', price: '300 ETB', status: 'Active', date: '5 hours ago', title: 'Fashion Shoot' },
     ]
   }
 ];

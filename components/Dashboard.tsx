@@ -26,6 +26,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onUpload }
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [fileType, setFileType] = useState<'image' | 'video'>('image');
@@ -88,6 +89,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onUpload }
     return null;
   };
 
+  const generateVideoThumbnail = (file: File) => {
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.onloadedmetadata = () => {
+      video.currentTime = 1; // Capture frame at 1s
+    };
+    video.onseeked = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        setThumbnailUrl(canvas.toDataURL('image/jpeg'));
+      }
+    };
+    video.src = URL.createObjectURL(file);
+  };
+
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -105,30 +125,31 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onUpload }
     
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
-      const error = validateFile(file);
-      if (error) {
-        setUploadError(error);
-        return;
-      }
-      setUploadError(null);
-      setSelectedFile(file);
-      setFileType(file.type.startsWith('video/') ? 'video' : 'image');
-      setPreviewUrl(URL.createObjectURL(file));
+      processFile(file);
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      const error = validateFile(file);
-      if (error) {
-        setUploadError(error);
-        return;
-      }
-      setUploadError(null);
-      setSelectedFile(file);
-      setFileType(file.type.startsWith('video/') ? 'video' : 'image');
-      setPreviewUrl(URL.createObjectURL(file));
+      processFile(file);
+    }
+  };
+
+  const processFile = (file: File) => {
+    const error = validateFile(file);
+    if (error) {
+      setUploadError(error);
+      return;
+    }
+    setUploadError(null);
+    setSelectedFile(file);
+    setFileType(file.type.startsWith('video/') ? 'video' : 'image');
+    setPreviewUrl(URL.createObjectURL(file));
+    setThumbnailUrl(null); // Reset thumbnail
+
+    if (file.type.startsWith('video/')) {
+      generateVideoThumbnail(file);
     }
   };
 
@@ -136,6 +157,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onUpload }
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setSelectedFile(null);
     setPreviewUrl(null);
+    setThumbnailUrl(null);
     setUploadError(null);
     setTitle('');
     setPrice('');
@@ -159,7 +181,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onUpload }
         status: 'Active',
         date: 'Just now',
         title: title || 'New Upload',
-        mediaType: fileType
+        mediaType: fileType,
+        thumbnailUrl: thumbnailUrl || undefined
       };
       
       setProfile(prev => ({
@@ -293,14 +316,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onUpload }
                           <div className="flex items-center gap-4">
                             <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 relative">
                               {photo.mediaType === 'video' ? (
-                                <video src={photo.url} className="w-full h-full object-cover" />
+                                <div className="relative w-full h-full">
+                                    <img 
+                                        src={photo.thumbnailUrl || photo.url} 
+                                        alt="Video Thumbnail" 
+                                        className="w-full h-full object-cover blur-[1px]" 
+                                    />
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                      <Icons.Play className="w-4 h-4 text-white fill-current" />
+                                    </div>
+                                </div>
                               ) : (
                                 <img src={photo.url} alt="Thumbnail" className="w-full h-full object-cover" />
-                              )}
-                              {photo.mediaType === 'video' && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                                  <Icons.Play className="w-4 h-4 text-white fill-current" />
-                                </div>
                               )}
                             </div>
                             <div>
@@ -333,14 +360,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onUpload }
                     <div key={photo.id} className="group relative rounded-lg overflow-hidden border border-gray-200">
                       <div className="w-full h-48 bg-gray-100 relative">
                         {photo.mediaType === 'video' ? (
-                          <video src={photo.url} className="w-full h-full object-cover" controls={false} />
+                          <>
+                             <img 
+                                src={photo.thumbnailUrl || photo.url} 
+                                alt={photo.title} 
+                                className="w-full h-full object-cover blur-[2px]" 
+                             />
+                             <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                                <Icons.Play className="w-10 h-10 text-white fill-current drop-shadow-md" />
+                             </div>
+                          </>
                         ) : (
                           <img src={photo.url} alt="Portfolio" className="w-full h-full object-cover" />
-                        )}
-                        {photo.mediaType === 'video' && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                             <Icons.Play className="w-8 h-8 text-white fill-current opacity-80" />
-                          </div>
                         )}
                       </div>
                       <div className="absolute top-2 right-2">
@@ -414,7 +445,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onUpload }
                       {previewUrl ? (
                         <div className="relative rounded-xl overflow-hidden group bg-black">
                           {fileType === 'video' ? (
-                            <video src={previewUrl} className="w-full h-64 object-contain rounded-xl" controls />
+                            <div className="relative h-64 w-full flex items-center justify-center bg-gray-900">
+                                <img src={thumbnailUrl || previewUrl} className="h-full w-full object-contain opacity-50 blur-sm" alt="Video Preview" />
+                                <Icons.Play className="w-16 h-16 text-white absolute" />
+                            </div>
                           ) : (
                             <img src={previewUrl} alt="Preview" className="w-full h-64 object-contain rounded-xl" />
                           )}
@@ -466,14 +500,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onUpload }
                           <Icons.DollarSign className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
                           <input 
                             type="number" 
-                            placeholder="500" 
+                            placeholder="300" 
                             required
                             min="50"
+                            max="500"
                             value={price}
-                            onChange={(e) => setPrice(e.target.value)}
+                            onChange={(e) => {
+                                const val = parseInt(e.target.value);
+                                if (val > 500) setPrice("500");
+                                else setPrice(e.target.value);
+                            }}
                             className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-shadow" 
                           />
                         </div>
+                        <p className="text-xs text-gray-500 mt-1">Maximum price allowed is 500 ETB</p>
                       </div>
                       <div>
                          <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>

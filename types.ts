@@ -14,8 +14,7 @@ export interface User {
 }
 
 export enum AuthStep {
-  PHONE_INPUT = 'PHONE_INPUT',
-  OTP_VERIFICATION = 'OTP_VERIFICATION',
+  LOGIN_INPUT = 'LOGIN_INPUT',
   SUCCESS = 'SUCCESS'
 }
 
@@ -36,6 +35,7 @@ export interface PhotoItem {
   date: string;
   title?: string;
   mediaType?: 'image' | 'video';
+  thumbnailUrl?: string;
 }
 
 export interface UserStats {

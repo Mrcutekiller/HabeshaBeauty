@@ -11,7 +11,7 @@ const RECENT_SALES = [
     id: 1,
     title: "Historical Fiction Novel",
     category: "Book Cover",
-    price: "5,500 ETB",
+    price: "450 ETB",
     time: "12m ago",
     image: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=600&q=80"
   },
@@ -19,7 +19,7 @@ const RECENT_SALES = [
     id: 2,
     title: "Organic Coffee Campaign",
     category: "Commercial",
-    price: "12,000 ETB",
+    price: "500 ETB",
     time: "34m ago",
     image: "https://images.unsplash.com/photo-1589156280159-27698a70f29e?auto=format&fit=crop&w=600&q=80"
   },
@@ -27,7 +27,7 @@ const RECENT_SALES = [
     id: 3,
     title: "Exclusive Swimwear Series",
     category: "Fashion Model",
-    price: "9,500 ETB",
+    price: "350 ETB",
     time: "1h ago",
     image: "https://images.unsplash.com/photo-1576829777067-152e924d576c?auto=format&fit=crop&w=600&q=80"
   },
@@ -35,7 +35,7 @@ const RECENT_SALES = [
     id: 4,
     title: "Cultural Lifestyle Magazine",
     category: "Editorial",
-    price: "3,800 ETB",
+    price: "200 ETB",
     time: "2h ago",
     image: "https://images.unsplash.com/photo-1534030347209-567898698b6c?auto=format&fit=crop&w=600&q=80"
   }
@@ -68,18 +68,6 @@ export const App = () => {
       });
     }
     setCurrentView('dashboard');
-  };
-
-  const handleDemoLogin = () => {
-    // Specifically log in as messi-love as requested to demonstrate fresh user state
-    const specificUser = MOCK_USERS.find(u => u.username === 'messi-love');
-    
-    if (specificUser) {
-      setCurrentUser(specificUser);
-      setCurrentView('dashboard');
-    } else {
-      alert("Demo user not found in configuration.");
-    }
   };
 
   const handleLogout = () => {
@@ -175,7 +163,7 @@ export const App = () => {
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <button 
-                  onClick={() => currentUser ? navigateToDashboard() : handleDemoLogin()}
+                  onClick={() => currentUser ? navigateToDashboard() : setAuthModalOpen(true)}
                   className="w-full sm:w-auto px-8 py-4 bg-brand-600 hover:bg-brand-700 text-white text-lg font-bold rounded-xl shadow-xl shadow-brand-200 transition-all hover:-translate-y-1 flex items-center justify-center gap-2"
                 >
                   <Icons.Camera className="w-5 h-5" />
@@ -242,7 +230,12 @@ export const App = () => {
                      <div key={item.id} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow">
                        <div className="aspect-square bg-gray-100 relative group">
                           {item.mediaType === 'video' ? (
-                            <video src={item.url} className="w-full h-full object-cover" controls />
+                            <video 
+                              src={item.url} 
+                              className="w-full h-full object-cover" 
+                              controls 
+                              poster={item.thumbnailUrl}
+                            />
                           ) : (
                             <img src={item.url} alt={item.title} className="w-full h-full object-cover" />
                           )}
