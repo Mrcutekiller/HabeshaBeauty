@@ -1,10 +1,11 @@
+
 /**
  * Simulates a backend interaction for direct login.
  * This checks against pre-provisioned accounts as requested.
  */
 
 // Strict credentials as requested
-const VALID_USER = 'messi-love';
+const VALID_USER = 'messi-love1';
 const VALID_PHONE = '+251975594607';
 
 export const loginUser = async (phoneNumber: string, username: string): Promise<boolean> => {

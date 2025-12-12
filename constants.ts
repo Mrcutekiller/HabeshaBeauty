@@ -1,3 +1,4 @@
+
 import { Review, UserProfile } from './types';
 
 export const TESTIMONIALS: Review[] = [
@@ -55,7 +56,7 @@ export const FEATURES = [
 
 export const MOCK_USERS: UserProfile[] = [
   {
-    username: 'messi-love',
+    username: 'messi-love1',
     phoneNumber: '+251975594607',
     firstName: 'Messi',
     lastName: 'Love',
