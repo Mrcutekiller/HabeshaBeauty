@@ -1,14 +1,23 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Icons } from './Icons';
+import { UserProfile } from '../types';
 
 interface DashboardProps {
-  username: string;
+  user: UserProfile;
   onLogout: () => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'photos' | 'settings' | 'upload'>('overview');
   
+  // User State (Local)
+  const [profile, setProfile] = useState<UserProfile>(user);
+
+  // Update local state if prop changes
+  useEffect(() => {
+    setProfile(user);
+  }, [user]);
+
   // Upload State
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -17,19 +26,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Mock Data
-  const stats = [
-    { label: 'Total Earnings', value: '12,450 ETB', icon: 'DollarSign', color: 'text-green-600', bg: 'bg-green-50' },
-    { label: 'Photos Sold', value: '42', icon: 'ShoppingBag', color: 'text-brand-600', bg: 'bg-brand-50' },
-    { label: 'Profile Views', value: '1,205', icon: 'Eye', color: 'text-blue-600', bg: 'bg-blue-50' },
-  ];
+  // Settings State
+  const [settingsForm, setSettingsForm] = useState({
+    firstName: profile.firstName,
+    lastName: profile.lastName,
+    bankName: profile.bankName,
+    accountNumber: profile.accountNumber
+  });
 
-  const myPhotos = [
-    { id: 1, url: 'https://picsum.photos/id/1011/300/300', price: '800 ETB', status: 'Sold', date: '2 hours ago' },
-    { id: 2, url: 'https://picsum.photos/id/1027/300/300', price: '1,200 ETB', status: 'Active', date: '1 day ago' },
-    { id: 3, url: 'https://picsum.photos/id/1012/300/300', price: '950 ETB', status: 'Active', date: '3 days ago' },
-    { id: 4, url: 'https://picsum.photos/id/1013/300/300', price: '1,500 ETB', status: 'Sold', date: '1 week ago' },
-  ];
+  const handleSettingsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setSettingsForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const saveSettings = () => {
+    setProfile(prev => ({
+      ...prev,
+      ...settingsForm
+    }));
+    alert("Profile settings saved successfully!");
+  };
 
   // Upload Handlers
   const validateFile = (file: File): string | null => {
@@ -101,10 +117,32 @@ export const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
     setTimeout(() => {
       setIsUploading(false);
       alert("Photo uploaded successfully!");
+      
+      // Mock adding photo to profile
+      const newPhoto = {
+        id: Date.now(),
+        url: previewUrl || '',
+        price: '500 ETB',
+        status: 'Active' as const,
+        date: 'Just now',
+        title: 'New Upload'
+      };
+      
+      setProfile(prev => ({
+        ...prev,
+        photos: [newPhoto, ...prev.photos]
+      }));
+
       setActiveTab('photos');
       clearFile();
     }, 2000);
   };
+
+  const stats = [
+    { label: 'Total Earnings', value: profile.stats.earnings, icon: 'DollarSign', color: 'text-green-600', bg: 'bg-green-50' },
+    { label: 'Photos Sold', value: profile.stats.photosSold.toString(), icon: 'ShoppingBag', color: 'text-brand-600', bg: 'bg-brand-50' },
+    { label: 'Profile Views', value: profile.stats.views.toString(), icon: 'Eye', color: 'text-blue-600', bg: 'bg-blue-50' },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20 pb-12">
@@ -114,7 +152,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-serif font-bold text-gray-900">Seller Dashboard</h1>
-            <p className="text-gray-500">Welcome back, @{username}</p>
+            <p className="text-gray-500">Welcome back, @{profile.username}</p>
           </div>
           <div className="flex gap-3">
              <button 
@@ -182,6 +220,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
             {/* Overview Tab */}
             {activeTab === 'overview' && (
               <div className="space-y-6">
+                {profile.isNewUser && (
+                   <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex items-center gap-3">
+                     <div className="bg-blue-100 p-2 rounded-full text-blue-600">
+                       <Icons.Star className="w-5 h-5" />
+                     </div>
+                     <div>
+                       <h4 className="font-bold text-blue-900">Welcome, {profile.firstName}!</h4>
+                       <p className="text-sm text-blue-700">Your profile is ready. Upload your first photo to start earning.</p>
+                     </div>
+                   </div>
+                )}
+
                 <div className="grid sm:grid-cols-3 gap-6">
                   {stats.map((stat, idx) => {
                     const Icon = Icons[stat.icon as keyof typeof Icons];
@@ -199,25 +249,31 @@ export const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
 
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                   <h3 className="text-lg font-bold text-gray-900 mb-4">Recent Sales Activity</h3>
-                  <div className="space-y-4">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden">
-                            <img src={`https://picsum.photos/id/${200+i}/100/100`} alt="Thumbnail" className="w-full h-full object-cover" />
+                  {profile.photos.some(p => p.status === 'Sold') ? (
+                    <div className="space-y-4">
+                      {profile.photos.filter(p => p.status === 'Sold').slice(0, 3).map((photo) => (
+                        <div key={photo.id} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden">
+                              <img src={photo.url} alt="Thumbnail" className="w-full h-full object-cover" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">{photo.title || 'Untitled Photo'}</p>
+                              <p className="text-xs text-gray-500">Sold via Platform</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium text-gray-900">Traditional Coffee Ceremony Set</p>
-                            <p className="text-xs text-gray-500">Sold to @user{900+i}</p>
+                          <div className="text-right">
+                            <p className="font-bold text-brand-600">+{photo.price}</p>
+                            <p className="text-xs text-gray-400">{photo.date}</p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-bold text-brand-600">+450 ETB</p>
-                          <p className="text-xs text-gray-400">Just now</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>No sales yet. Upload high-quality photos to attract buyers!</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -227,7 +283,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-6">Your Portfolio</h3>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {myPhotos.map((photo) => (
+                  {profile.photos.map((photo) => (
                     <div key={photo.id} className="group relative rounded-lg overflow-hidden border border-gray-200">
                       <img src={photo.url} alt="Portfolio" className="w-full h-48 object-cover" />
                       <div className="absolute top-2 right-2">
@@ -400,17 +456,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
                 <form className="space-y-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Telegram Username (Connected)</label>
-                    <input type="text" disabled value={`@${username}`} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed" />
+                    <input type="text" disabled value={`@${profile.username}`} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed" />
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                      <input type="text" defaultValue="Hanna" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none" />
+                      <input 
+                        type="text" 
+                        name="firstName"
+                        value={settingsForm.firstName}
+                        onChange={handleSettingsChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none" 
+                      />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                      <input type="text" defaultValue="Girma" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none" />
+                      <input 
+                        type="text" 
+                        name="lastName"
+                        value={settingsForm.lastName}
+                        onChange={handleSettingsChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none" 
+                      />
                     </div>
                   </div>
 
@@ -421,7 +489,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
                     <div className="space-y-4">
                        <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
-                        <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none">
+                        <select 
+                          name="bankName"
+                          value={settingsForm.bankName}
+                          onChange={handleSettingsChange}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                        >
                           <option>Commercial Bank of Ethiopia (CBE)</option>
                           <option>Dashen Bank</option>
                           <option>Awash Bank</option>
@@ -430,13 +503,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ username, onLogout }) => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
-                        <input type="text" placeholder="1000..." className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none" />
+                        <input 
+                          type="text" 
+                          name="accountNumber"
+                          value={settingsForm.accountNumber}
+                          onChange={handleSettingsChange}
+                          placeholder="1000..." 
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none" 
+                        />
                       </div>
                     </div>
                   </div>
 
                   <div className="pt-4 flex justify-end">
-                    <button type="button" className="bg-brand-600 hover:bg-brand-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                    <button 
+                      type="button" 
+                      onClick={saveSettings}
+                      className="bg-brand-600 hover:bg-brand-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                    >
                       Save Changes
                     </button>
                   </div>

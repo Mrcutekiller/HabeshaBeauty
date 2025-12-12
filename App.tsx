@@ -3,7 +3,8 @@ import { Icons } from './components/Icons';
 import { TestimonialCard } from './components/TestimonialCard';
 import { AuthModal } from './components/AuthModal';
 import { Dashboard } from './components/Dashboard';
-import { TESTIMONIALS, FEATURES } from './constants';
+import { TESTIMONIALS, FEATURES, MOCK_USERS } from './constants';
+import { UserProfile } from './types';
 
 const RECENT_SALES = [
   {
@@ -40,13 +41,39 @@ const RECENT_SALES = [
   }
 ];
 
-const App = () => {
+export const App = () => {
   const [isAuthModalOpen, setAuthModalOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [currentView, setCurrentView] = useState<'home' | 'dashboard'>('home');
 
   const handleLoginSuccess = (username: string) => {
-    setCurrentUser(username);
+    // Find mock user or create a fresh one if not found
+    const existingUser = MOCK_USERS.find(u => u.username.toLowerCase() === username.toLowerCase());
+    
+    if (existingUser) {
+      setCurrentUser(existingUser);
+    } else {
+      // Default fallback for generic testing
+      setCurrentUser({
+        username: username,
+        phoneNumber: '',
+        firstName: 'New',
+        lastName: 'User',
+        bankName: 'Commercial Bank of Ethiopia (CBE)',
+        accountNumber: '',
+        stats: { earnings: '0 ETB', photosSold: 0, views: 0 },
+        photos: [],
+        isNewUser: true
+      });
+    }
+    setCurrentView('dashboard');
+  };
+
+  const handleDemoLogin = () => {
+    // Randomly select one of the populated users (excluding the empty messi-love one for the demo button)
+    const demoUsers = MOCK_USERS.filter(u => u.photos.length > 0);
+    const randomUser = demoUsers[Math.floor(Math.random() * demoUsers.length)];
+    setCurrentUser(randomUser);
     setCurrentView('dashboard');
   };
 
@@ -115,7 +142,7 @@ const App = () => {
       </nav>
 
       {currentView === 'dashboard' && currentUser ? (
-        <Dashboard username={currentUser} onLogout={handleLogout} />
+        <Dashboard user={currentUser} onLogout={handleLogout} />
       ) : (
         <>
           {/* Hero Section */}
@@ -139,7 +166,7 @@ const App = () => {
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <button 
-                  onClick={() => currentUser ? navigateToDashboard() : setAuthModalOpen(true)}
+                  onClick={() => currentUser ? navigateToDashboard() : handleDemoLogin()}
                   className="w-full sm:w-auto px-8 py-4 bg-brand-600 hover:bg-brand-700 text-white text-lg font-bold rounded-xl shadow-xl shadow-brand-200 transition-all hover:-translate-y-1 flex items-center justify-center gap-2"
                 >
                   <Icons.Camera className="w-5 h-5" />
@@ -371,5 +398,3 @@ const App = () => {
     </div>
   );
 };
-
-export default App;

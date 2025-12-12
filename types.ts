@@ -27,3 +27,30 @@ export interface AuthState {
   isLoading: boolean;
   error: string | null;
 }
+
+export interface PhotoItem {
+  id: number;
+  url: string;
+  price: string;
+  status: 'Active' | 'Sold';
+  date: string;
+  title?: string;
+}
+
+export interface UserStats {
+  earnings: string;
+  photosSold: number;
+  views: number;
+}
+
+export interface UserProfile {
+  username: string;
+  phoneNumber: string;
+  firstName: string;
+  lastName: string;
+  bankName: string;
+  accountNumber: string;
+  stats: UserStats;
+  photos: PhotoItem[];
+  isNewUser?: boolean;
+}
