@@ -1,13 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Icons } from './Icons';
-import { UserProfile } from '../types';
+import { UserProfile, PhotoItem } from '../types';
 
 interface DashboardProps {
   user: UserProfile;
   onLogout: () => void;
+  onUpload: (item: PhotoItem) => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout, onUpload }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'photos' | 'settings' | 'upload'>('overview');
   
   // User State (Local)
@@ -18,12 +19,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     setProfile(user);
   }, [user]);
 
+  // Delete Confirmation State
+  const [photoToDelete, setPhotoToDelete] = useState<number | null>(null);
+
   // Upload State
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [fileType, setFileType] = useState<'image' | 'video'>('image');
+  
+  // Upload Form State
+  const [title, setTitle] = useState('');
+  const [price, setPrice] = useState('');
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Settings State
@@ -47,13 +57,33 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     alert("Profile settings saved successfully!");
   };
 
+  // Delete Handlers
+  const handleDeleteClick = (id: number) => {
+    setPhotoToDelete(id);
+  };
+
+  const confirmDelete = () => {
+    if (photoToDelete) {
+      setProfile(prev => ({
+        ...prev,
+        photos: prev.photos.filter(p => p.id !== photoToDelete)
+      }));
+      setPhotoToDelete(null);
+    }
+  };
+
+  const cancelDelete = () => {
+    setPhotoToDelete(null);
+  };
+
   // Upload Handlers
   const validateFile = (file: File): string | null => {
-    if (!file.type.startsWith('image/')) {
-      return 'Please upload a valid image file (JPG, PNG).';
+    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+      return 'Please upload a valid image or video file.';
     }
-    if (file.size > 5 * 1024 * 1024) { // 5MB
-      return 'File size exceeds 5MB limit.';
+    const maxSize = file.type.startsWith('video/') ? 50 * 1024 * 1024 : 5 * 1024 * 1024; // 50MB for video, 5MB for image
+    if (file.size > maxSize) {
+      return `File size exceeds limit (${file.type.startsWith('video/') ? '50MB' : '5MB'}).`;
     }
     return null;
   };
@@ -82,6 +112,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
       }
       setUploadError(null);
       setSelectedFile(file);
+      setFileType(file.type.startsWith('video/') ? 'video' : 'image');
       setPreviewUrl(URL.createObjectURL(file));
     }
   };
@@ -96,6 +127,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
       }
       setUploadError(null);
       setSelectedFile(file);
+      setFileType(file.type.startsWith('video/') ? 'video' : 'image');
       setPreviewUrl(URL.createObjectURL(file));
     }
   };
@@ -105,6 +137,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     setSelectedFile(null);
     setPreviewUrl(null);
     setUploadError(null);
+    setTitle('');
+    setPrice('');
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -116,22 +150,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     // Simulate upload delay
     setTimeout(() => {
       setIsUploading(false);
-      alert("Photo uploaded successfully!");
+      alert(`${fileType === 'video' ? 'Video' : 'Photo'} uploaded successfully!`);
       
-      // Mock adding photo to profile
-      const newPhoto = {
+      const newPhoto: PhotoItem = {
         id: Date.now(),
         url: previewUrl || '',
-        price: '500 ETB',
-        status: 'Active' as const,
+        price: `${price} ETB`,
+        status: 'Active',
         date: 'Just now',
-        title: 'New Upload'
+        title: title || 'New Upload',
+        mediaType: fileType
       };
       
       setProfile(prev => ({
         ...prev,
         photos: [newPhoto, ...prev.photos]
       }));
+      
+      // Notify parent app to show in marketplace
+      onUpload(newPhoto);
 
       setActiveTab('photos');
       clearFile();
@@ -159,7 +196,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                onClick={() => setActiveTab('upload')}
                className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg transition-colors shadow-sm"
              >
-                <Icons.Plus className="w-4 h-4" /> Upload New Photo
+                <Icons.Plus className="w-4 h-4" /> Upload New
              </button>
              <button 
                 onClick={onLogout}
@@ -186,13 +223,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                   onClick={() => setActiveTab('photos')}
                   className={`flex items-center gap-3 px-6 py-4 text-sm font-medium transition-colors border-l-4 ${activeTab === 'photos' ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-transparent text-gray-600 hover:bg-gray-50'}`}
                 >
-                  <Icons.ImageIcon className="w-5 h-5" /> My Photos
+                  <Icons.ImageIcon className="w-5 h-5" /> My Portfolio
                 </button>
                 <button 
                   onClick={() => setActiveTab('upload')}
                   className={`flex items-center gap-3 px-6 py-4 text-sm font-medium transition-colors border-l-4 ${activeTab === 'upload' ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-transparent text-gray-600 hover:bg-gray-50'}`}
                 >
-                  <Icons.Upload className="w-5 h-5" /> Upload Photo
+                  <Icons.Upload className="w-5 h-5" /> Upload Content
                 </button>
                 <button 
                   onClick={() => setActiveTab('settings')}
@@ -209,7 +246,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                  <Icons.Shield className="w-5 h-5" /> Verified Seller
                </div>
                <p className="text-sm text-green-800/80">
-                 Your identity has been confirmed via Telegram. You can sell unlimited photos.
+                 Your identity has been confirmed via Telegram. You can sell unlimited photos and videos.
                </p>
             </div>
           </div>
@@ -220,7 +257,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
             {/* Overview Tab */}
             {activeTab === 'overview' && (
               <div className="space-y-6">
-                {profile.isNewUser && (
+                {profile.isNewUser && profile.photos.length === 0 && (
                    <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex items-center gap-3">
                      <div className="bg-blue-100 p-2 rounded-full text-blue-600">
                        <Icons.Star className="w-5 h-5" />
@@ -254,11 +291,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                       {profile.photos.filter(p => p.status === 'Sold').slice(0, 3).map((photo) => (
                         <div key={photo.id} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
                           <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden">
-                              <img src={photo.url} alt="Thumbnail" className="w-full h-full object-cover" />
+                            <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 relative">
+                              {photo.mediaType === 'video' ? (
+                                <video src={photo.url} className="w-full h-full object-cover" />
+                              ) : (
+                                <img src={photo.url} alt="Thumbnail" className="w-full h-full object-cover" />
+                              )}
+                              {photo.mediaType === 'video' && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                  <Icons.Play className="w-4 h-4 text-white fill-current" />
+                                </div>
+                              )}
                             </div>
                             <div>
-                              <p className="font-medium text-gray-900">{photo.title || 'Untitled Photo'}</p>
+                              <p className="font-medium text-gray-900 line-clamp-1">{photo.title || 'Untitled Content'}</p>
                               <p className="text-xs text-gray-500">Sold via Platform</p>
                             </div>
                           </div>
@@ -271,7 +317,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                     </div>
                   ) : (
                     <div className="text-center py-8 text-gray-500">
-                      <p>No sales yet. Upload high-quality photos to attract buyers!</p>
+                      <p>No sales yet. Upload high-quality photos or videos to attract buyers!</p>
                     </div>
                   )}
                 </div>
@@ -285,20 +331,37 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {profile.photos.map((photo) => (
                     <div key={photo.id} className="group relative rounded-lg overflow-hidden border border-gray-200">
-                      <img src={photo.url} alt="Portfolio" className="w-full h-48 object-cover" />
+                      <div className="w-full h-48 bg-gray-100 relative">
+                        {photo.mediaType === 'video' ? (
+                          <video src={photo.url} className="w-full h-full object-cover" controls={false} />
+                        ) : (
+                          <img src={photo.url} alt="Portfolio" className="w-full h-full object-cover" />
+                        )}
+                        {photo.mediaType === 'video' && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                             <Icons.Play className="w-8 h-8 text-white fill-current opacity-80" />
+                          </div>
+                        )}
+                      </div>
                       <div className="absolute top-2 right-2">
                         <span className={`px-2 py-1 text-xs font-bold rounded-full ${photo.status === 'Sold' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
                           {photo.status}
                         </span>
                       </div>
                       <div className="p-4 bg-white">
+                        <h4 className="font-bold text-gray-900 text-sm mb-1 truncate">{photo.title}</h4>
                         <div className="flex justify-between items-center mb-2">
-                           <span className="font-bold text-gray-900">{photo.price}</span>
+                           <span className="font-bold text-brand-600 text-sm">{photo.price}</span>
                            <span className="text-xs text-gray-500">{photo.date}</span>
                         </div>
                         <div className="flex gap-2 mt-3">
                            <button className="flex-1 text-sm bg-gray-50 hover:bg-gray-100 text-gray-700 py-1.5 rounded transition-colors">Edit</button>
-                           <button className="flex-1 text-sm bg-red-50 hover:bg-red-100 text-red-600 py-1.5 rounded transition-colors">Delete</button>
+                           <button 
+                             onClick={() => handleDeleteClick(photo.id)}
+                             className="flex-1 text-sm bg-red-50 hover:bg-red-100 text-red-600 py-1.5 rounded transition-colors"
+                           >
+                             Delete
+                           </button>
                         </div>
                       </div>
                     </div>
@@ -310,7 +373,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                     <div className="w-12 h-12 bg-gray-100 group-hover:bg-brand-100 rounded-full flex items-center justify-center mb-3 transition-colors">
                       <Icons.Plus className="w-6 h-6 text-gray-400 group-hover:text-brand-600" />
                     </div>
-                    <span className="text-sm font-medium text-gray-600 group-hover:text-brand-700">Add New Photo</span>
+                    <span className="text-sm font-medium text-gray-600 group-hover:text-brand-700">Add New Content</span>
                   </button>
                 </div>
               </div>
@@ -343,25 +406,30 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                       <input 
                         ref={fileInputRef}
                         type="file" 
-                        accept="image/*"
+                        accept="image/*,video/*"
                         onChange={handleFileChange}
                         className="hidden" 
                       />
                       
                       {previewUrl ? (
-                        <div className="relative rounded-xl overflow-hidden group">
-                          <img src={previewUrl} alt="Preview" className="w-full h-64 object-cover rounded-xl" />
-                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <div className="relative rounded-xl overflow-hidden group bg-black">
+                          {fileType === 'video' ? (
+                            <video src={previewUrl} className="w-full h-64 object-contain rounded-xl" controls />
+                          ) : (
+                            <img src={previewUrl} alt="Preview" className="w-full h-64 object-contain rounded-xl" />
+                          )}
+                          
+                          <div className="absolute top-2 right-2 flex gap-2">
+                             <div className="bg-black/60 text-white text-xs px-2 py-1 rounded">
+                              {fileType.toUpperCase()} • {(selectedFile!.size / (1024 * 1024)).toFixed(2)} MB
+                            </div>
                             <button 
                               type="button"
                               onClick={(e) => { e.stopPropagation(); clearFile(); }}
-                              className="bg-white/20 backdrop-blur-sm text-white p-3 rounded-full hover:bg-white/30 transition-colors"
+                              className="bg-red-500/80 hover:bg-red-600 text-white p-1 rounded transition-colors"
                             >
-                              <Icons.Trash2 className="w-6 h-6" />
+                              <Icons.X className="w-4 h-4" />
                             </button>
-                          </div>
-                          <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
-                            {(selectedFile!.size / (1024 * 1024)).toFixed(2)} MB
                           </div>
                         </div>
                       ) : (
@@ -370,7 +438,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                              <Icons.Upload className="w-8 h-8" />
                            </div>
                            <h4 className="text-lg font-medium text-gray-900 mb-1">Drag & Drop or Click to Upload</h4>
-                           <p className="text-sm text-gray-500 mb-2">Supports JPG, PNG (Max 5MB)</p>
+                           <p className="text-sm text-gray-500 mb-2">Photos or Videos (Max 5MB for photos, 50MB for video)</p>
                            {uploadError && <p className="text-red-500 text-sm font-medium mt-2 bg-red-50 px-3 py-1 rounded">{uploadError}</p>}
                         </div>
                       )}
@@ -380,11 +448,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                   {/* Form Details */}
                   <div className="grid grid-cols-1 gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Content Title</label>
                       <input 
                         type="text" 
                         placeholder="e.g. Traditional Coffee Ceremony" 
                         required
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-shadow" 
                       />
                     </div>
@@ -399,6 +469,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                             placeholder="500" 
                             required
                             min="50"
+                            value={price}
+                            onChange={(e) => setPrice(e.target.value)}
                             className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-shadow" 
                           />
                         </div>
@@ -410,6 +482,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                            <option>Nature & Landscape</option>
                            <option>Urban & Street</option>
                            <option>Portrait</option>
+                           <option>Fashion & Lifestyle</option>
                            <option>Food & Drink</option>
                          </select>
                       </div>
@@ -441,7 +514,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                       {isUploading ? (
                         <>Uploading...</>
                       ) : (
-                        <><Icons.Upload className="w-4 h-4" /> Publish Photo</>
+                        <><Icons.Upload className="w-4 h-4" /> Publish</>
                       )}
                     </button>
                   </div>
@@ -531,6 +604,35 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
           </div>
         </div>
       </div>
+      
+      {/* Delete Confirmation Modal */}
+      {photoToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 text-center animate-in fade-in zoom-in duration-200">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Icons.Trash2 className="w-6 h-6 text-red-600" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Content?</h3>
+            <p className="text-sm text-gray-500 mb-6">
+              Are you sure you want to remove this item from your portfolio? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={cancelDelete}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDelete}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium shadow-md shadow-red-100"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

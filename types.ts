@@ -35,6 +35,7 @@ export interface PhotoItem {
   status: 'Active' | 'Sold';
   date: string;
   title?: string;
+  mediaType?: 'image' | 'video';
 }
 
 export interface UserStats {

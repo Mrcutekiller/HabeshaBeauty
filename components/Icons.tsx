@@ -21,7 +21,10 @@ import {
   ShoppingBag,
   Upload,
   X,
-  Trash2
+  Trash2,
+  Video,
+  Play,
+  FileVideo
 } from 'lucide-react';
 
 export const Icons = {
@@ -46,5 +49,8 @@ export const Icons = {
   ShoppingBag,
   Upload,
   X,
-  Trash2
+  Trash2,
+  Video,
+  Play,
+  FileVideo
 };
